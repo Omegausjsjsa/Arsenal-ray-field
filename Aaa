@@ -193,7 +193,7 @@ MainTab:CreateToggle({
 
 
 MainTab:CreateToggle({
-    Name = "Enable hit box",
+    Name = "auto farm",
     CurrentValue = false,
     Callback = function(Value)
         getgenv().AutoFarm = Value
