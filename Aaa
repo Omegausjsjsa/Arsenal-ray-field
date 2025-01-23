@@ -1,0 +1,268 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+    Name = "Etherbyte Hub | Arsenal",
+    LoadingTitle = "Etherbyte Hub",
+    LoadingSubtitle = "by calgl#0001",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "EtherbyteHubConfigs",
+        FileName = "ArsenalConfig"
+    },
+    Discord = {
+        Enabled = false,
+        Invite = "", -- Add your invite here
+        RememberJoins = false
+    },
+    KeySystem = false, -- Set to true if using a key system
+})
+
+-- Main Tab
+local MainTab = Window:CreateTab("Main", 4483362458) -- Replace with desired icon ID
+
+-- ESP Tab
+local ESPTab = Window:CreateTab("ESP", 4483362458) -- Replace with desired icon ID
+
+-- Main Tab: Aim Assist
+MainTab:CreateSection("Aim Assist")
+
+local teamCheckEnabled = false
+local wallCheckEnabled = false
+local lockOnActive = false
+local lockOnRange = 5
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+local RunService = game:GetService("RunService")
+
+local function isVisible(character)
+    local head = character:FindFirstChild("Head")
+    if not head then return false end
+
+    local ray = Ray.new(Camera.CFrame.Position, (head.Position - Camera.CFrame.Position).unit * (head.Position - Camera.CFrame.Position).magnitude)
+    local part = workspace:FindPartOnRayWithIgnoreList(ray, {LocalPlayer.Character, character})
+
+    return part == nil
+end
+
+local function getClosestPlayer()
+    local closestPlayer = nil
+    local closestDistance = math.huge
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
+            if teamCheckEnabled and player.Team == LocalPlayer.Team then
+                continue
+            end
+
+            if wallCheckEnabled and not isVisible(player.Character) then
+                continue
+            end
+
+            local headPosition = player.Character.Head.Position
+            local screenPosition, onScreen = Camera:WorldToScreenPoint(headPosition)
+
+            if onScreen then
+                local directionToPlayer = (headPosition - Camera.CFrame.Position).unit
+                local lookDirection = Camera.CFrame.LookVector
+
+                local distanceFromCameraDirection = (headPosition - (Camera.CFrame.Position + lookDirection * ((headPosition - Camera.CFrame.Position).magnitude))).magnitude
+
+                if distanceFromCameraDirection < lockOnRange then
+                    local distance = (Vector2.new(screenPosition.X, screenPosition.Y) - Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)).magnitude
+                    if distance < closestDistance then
+                        closestDistance = distance
+                        closestPlayer = player
+                    end
+                end
+            end
+        end
+    end
+
+    return closestPlayer
+end
+
+local function lockOnToPlayer()
+    if not lockOnActive then return end
+
+    local closestPlayer = getClosestPlayer()
+
+    if closestPlayer and closestPlayer.Character and closestPlayer.Character:FindFirstChild("Head") then
+        local headPosition = closestPlayer.Character.Head.Position
+        Camera.CFrame = CFrame.new(Camera.CFrame.Position, headPosition)
+    end
+end
+
+MainTab:CreateToggle({
+    Name = "Aim Assist",
+    CurrentValue = false,
+    Callback = function(Value)
+        lockOnActive = Value
+    end    
+})
+
+MainTab:CreateToggle({
+    Name = "Team Check",
+    CurrentValue = false,
+    Callback = function(Value)
+        teamCheckEnabled = Value
+    end    
+})
+
+MainTab:CreateToggle({
+    Name = "Wall Check",
+    CurrentValue = false,
+    Callback = function(Value)
+        wallCheckEnabled = Value
+    end    
+})
+
+RunService.RenderStepped:Connect(function()
+    lockOnToPlayer()
+end)
+
+-- Main Tab: Speed
+MainTab:CreateSection("Speed")
+
+local UIS = game:GetService("UserInputService")
+local IPlayer = game:GetService("Players").LocalPlayer
+
+getgenv().speedinput = 5
+getgenv().speed = false
+
+MainTab:CreateToggle({
+    Name = "Toggle CFrame Speed",
+    CurrentValue = false,
+    Callback = function(Value)
+        getgenv().speed = Value
+    end    
+})
+
+MainTab:CreateSlider({
+    Name = "CFrame Speed",
+    Range = {2, 150},
+    Increment = 1,
+    Suffix = "Speed",
+    CurrentValue = 5,
+    Callback = function(Value)
+        getgenv().speedinput = Value
+    end
+})
+
+spawn(function()
+    while game:GetService("RunService").Heartbeat:Wait() do
+        if IPlayer.Character and IPlayer.Character:FindFirstChild("HumanoidRootPart") and
+           IPlayer.Character:FindFirstChild("Head") and
+           IPlayer.Character:FindFirstChild("Humanoid").MoveDirection.Magnitude > 0 and
+           getgenv().speed then
+            IPlayer.Character:TranslateBy(IPlayer.Character:FindFirstChild("Humanoid").MoveDirection * getgenv().speedinput * 2)
+        end
+    end
+end)
+
+-- ESP Tab
+ESPTab:CreateSection("ESP")
+
+local ESP = loadstring(game:HttpGet("https://kiriot22.com/releases/ESP.lua"))()
+ESP:Toggle(true)
+ESP.Players = false
+ESP.Tracers = false
+ESP.Boxes = false
+ESP.Names = false
+ESP.TeamColor = false
+ESP.TeamMates = false
+
+ESPTab:CreateToggle({
+    Name = "Player ESP",
+    CurrentValue = false,
+    Callback = function(Value)
+        ESP.Players = Value
+    end    
+})
+
+ESPTab:CreateToggle({
+    Name = "Tracers",
+    CurrentValue = false,
+    Callback = function(Value)
+        ESP.Tracers = Value
+    end    
+})
+
+ESPTab:CreateToggle({
+    Name = "Boxes ESP",
+    CurrentValue = false,
+    Callback = function(Value)
+        ESP.Boxes = Value
+    end    
+})
+
+ESPTab:CreateToggle({
+    Name = "Nametags",
+    CurrentValue = false,
+    Callback = function(Value)
+        ESP.Names = Value
+    end    
+})
+
+ESPTab:CreateToggle({
+    Name = "Team Color",
+    CurrentValue = false,
+    Callback = function(Value)
+        ESP.TeamColor = Value
+    end    
+})
+
+ESPTab:CreateToggle({
+    Name = "Teammates",
+    CurrentValue = false,
+    Callback = function(Value)
+        ESP.TeamMates = Value
+    end    
+})
+
+
+
+MainTab:CreateButton({
+    Name = "Hitbox",
+    Callback = function()
+        -- Function to get the Players service
+        local function getPlayersService()
+            for _, v in pairs(game:GetChildren()) do
+                if v:IsA("Players") then
+                    return v
+                end
+            end
+        end
+
+        local playersService = getPlayersService()
+        local localPlayer = playersService.LocalPlayer
+
+        -- Function to adjust the size and properties of a character part
+        local function adjustPart(part)
+            if part and part:IsA("BasePart") then
+                part.CanCollide = false
+                part.Transparency = 0.5
+                part.Size = Vector3.new(13, 13, 13)
+            end
+        end
+
+        -- Main loop to continuously update all characters
+        spawn(function()
+            while true do
+                for _, player in pairs(playersService:GetPlayers()) do
+                    if player ~= localPlayer and player.Character then
+                        local character = player.Character
+                        -- Adjust parts
+                        adjustPart(character:FindFirstChild("RightUpperLeg"))
+                        adjustPart(character:FindFirstChild("LeftUpperLeg"))
+                        adjustPart(character:FindFirstChild("Head"))
+                        adjustPart(character:FindFirstChild("HumanoidRootPart"))
+                    end
+                end
+                wait(1)  -- Wait for 1 second before running again
+            end
+        end)
+        print("Hitbox button pressed")
+    end
+})
